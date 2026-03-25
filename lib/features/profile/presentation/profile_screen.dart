@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/auth/auth_service.dart';
 import 'widgets/info_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/stat_tile.dart';
@@ -12,6 +14,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final driver = _mockDriver();
+    final accountEmail =
+        FirebaseAuth.instance.currentUser?.email ?? driver.email;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -72,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
                             _InfoLine(
                               icon: Icons.email_rounded,
                               label: 'Email',
-                              value: driver.email,
+                              value: accountEmail,
                             ),
                             const SizedBox(height: 12),
                             _InfoLine(
@@ -160,6 +164,29 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: Card(
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.logout_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        title: Text(
+                          'Sair',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        subtitle: const Text('Encerrar sessão neste dispositivo'),
+                        onTap: () async {
+                          await AuthService().signOut();
+                        },
                       ),
                     ),
                   ),
