@@ -78,3 +78,14 @@ app.*.map.json
 **/GoogleService-Info.plist
 .env
 .env.*
+
+# Local-only API key config (Google Maps / Directions via DART_DEFINES)
+**/ios/Flutter/Local.xcconfig
+
+# Common secrets file names (if you add them later)
+**/*secrets*.plist
+**/*Secrets*.plist
+**/*secrets*.xml
+**/*Secrets*.xml
+**/secrets.json
+**/secret.json

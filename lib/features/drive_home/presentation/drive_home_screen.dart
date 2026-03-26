@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/mock_orders.dart';
 import '../domain/order.dart';
 import 'order_details_screen.dart';
+import '../../map/presentation/ride_map_tab.dart';
 import '../../profile/presentation/profile_screen.dart';
 import 'widgets/filter_chips_row.dart';
 import 'widgets/order_card.dart';
@@ -50,7 +51,7 @@ class _DriveHomeScreenState extends State<DriveHomeScreen> {
               selectedFilterId: _selectedFilterId,
               onSelectedFilter: (id) => setState(() => _selectedFilterId = id),
             ),
-            const _PlaceholderTab(title: 'Mapa'),
+            const RideMapTab(),
             const _PlaceholderTab(title: 'Histórico'),
             const ProfileScreen(),
           ],
