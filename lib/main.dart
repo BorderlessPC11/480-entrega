@@ -8,16 +8,15 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    // Firebase initialization disabled for temporary testing
-    /*
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    */
-  } catch (e) {
-    debugPrint('Firebase not initialized: $e');
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') {
+      rethrow;
+    }
   }
   runApp(const BorderlessApp());
 }

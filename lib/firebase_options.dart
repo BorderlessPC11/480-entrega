@@ -39,11 +39,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'replace-with-flutterfire-configure',
-    storageBucket: 'replace-with-flutterfire-configure.appspot.com',
+    apiKey: 'AIzaSyD43T3b-fU2QIe8WCxaMiWOR2IyD_wf5sg',
+    appId: '1:215315889197:android:05ee52c0eb00f0a4658ca4',
+    messagingSenderId: '215315889197',
+    projectId: 'whitelabel-55a14',
+    storageBucket: 'whitelabel-55a14.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
