@@ -82,5 +82,85 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData light() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _seed,
+        brightness: Brightness.light,
+      ).copyWith(
+        surface: const Color(0xFFF5F6F8),
+        surfaceContainerHighest: const Color(0xFFE8EBF0),
+        surfaceContainerHigh: const Color(0xFFF0F2F6),
+        surfaceContainer: const Color(0xFFFAFAFC),
+        outline: const Color(0xFFC9CFD8),
+      ),
+    );
+
+    final cs = base.colorScheme;
+
+    return base.copyWith(
+      scaffoldBackgroundColor: const Color(0xFFF2F3F6),
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFFF2F3F6),
+        foregroundColor: cs.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+      ),
+      cardTheme: CardThemeData(
+        color: cs.surfaceContainer,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: cs.outline.withValues(alpha: 0.5)),
+        ),
+        clipBehavior: Clip.antiAlias,
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        labelStyle: base.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: cs.surfaceContainer,
+        hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.7)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.7)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.primary.withValues(alpha: 0.9)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: cs.surface,
+        selectedItemColor: cs.primary,
+        unselectedItemColor: cs.onSurface.withValues(alpha: 0.55),
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+      ),
+      dividerTheme: DividerThemeData(
+        color: cs.outline.withValues(alpha: 0.45),
+        thickness: 1,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: cs.inverseSurface,
+        contentTextStyle: TextStyle(color: cs.onInverseSurface),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 }
 

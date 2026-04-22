@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../app/theme_mode_scope.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/user/user_display.dart';
 import '../data/user_profile_repository.dart';
@@ -139,6 +140,54 @@ class ProfileScreen extends StatelessWidget {
                     child: _StaggeredIn(
                       index: 1,
                       child: InfoCard(
+                        title: 'Aparência',
+                        trailing: const Icon(Icons.palette_rounded),
+                        child: ValueListenableBuilder<ThemeMode>(
+                          valueListenable: AppThemeModeScope.of(context),
+                          builder: (context, mode, _) {
+                            final isDark = mode == ThemeMode.dark;
+                            return SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                isDark ? 'Tema escuro' : 'Tema claro',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              subtitle: Text(
+                                isDark
+                                    ? 'Reduz o brilho em ambientes com pouca luz'
+                                    : 'Mais claro para uso diurno',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.65),
+                                ),
+                              ),
+                              secondary: Icon(
+                                isDark
+                                    ? Icons.dark_mode_rounded
+                                    : Icons.light_mode_rounded,
+                              ),
+                              value: isDark,
+                              onChanged: (v) {
+                                AppThemeModeScope.of(context).value =
+                                    v ? ThemeMode.dark : ThemeMode.light;
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: _StaggeredIn(
+                      index: 2,
+                      child: InfoCard(
                         title: 'Estatísticas',
                         trailing: const Icon(Icons.auto_graph_rounded),
                         child: Column(
@@ -178,7 +227,7 @@ class ProfileScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     child: _StaggeredIn(
-                      index: 2,
+                      index: 3,
                       child: InfoCard(
                         title: 'Veículo',
                         trailing: const Icon(Icons.directions_car_rounded),
