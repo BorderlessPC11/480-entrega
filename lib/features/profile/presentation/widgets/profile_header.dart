@@ -7,6 +7,7 @@ class ProfileHeader extends StatelessWidget {
     super.key,
     required this.name,
     required this.initials,
+    this.photoUrl,
     required this.rating,
     required this.reviewCount,
     required this.onSettingsTap,
@@ -15,6 +16,8 @@ class ProfileHeader extends StatelessWidget {
 
   final String name;
   final String initials;
+  /// Foto de perfil (ex.: Google); se nula, mostra iniciais.
+  final String? photoUrl;
   final double rating;
   final int reviewCount;
   final VoidCallback onSettingsTap;
@@ -57,15 +60,32 @@ class ProfileHeader extends StatelessWidget {
                   ),
                   border: Border.all(color: cs.outline.withValues(alpha: 0.6)),
                 ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: t.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ),
+                clipBehavior: Clip.antiAlias,
+                child: (photoUrl != null && photoUrl!.isNotEmpty)
+                    ? Image.network(
+                        photoUrl!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            initials,
+                            style: t.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          initials,
+                          style: t.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(

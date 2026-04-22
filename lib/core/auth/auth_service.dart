@@ -45,6 +45,27 @@ class AuthService {
     await _auth.currentUser?.reload();
   }
 
+  /// Atualiza o nome de exibição (Firebase Auth). Chama [reload] em seguida.
+  Future<void> updateDisplayName(String displayName) async {
+    final u = _auth.currentUser;
+    if (u == null) {
+      throw StateError('Nenhum usuário autenticado.');
+    }
+    final t = displayName.trim();
+    await u.updateDisplayName(t.isEmpty ? null : t);
+    await u.reload();
+  }
+
+  /// Atualiza a URL da foto (Storage ou provedor). [photoUrl] `null` remove a foto.
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    final u = _auth.currentUser;
+    if (u == null) {
+      throw StateError('Nenhum usuário autenticado.');
+    }
+    await u.updatePhotoURL(photoUrl);
+    await u.reload();
+  }
+
   String messageForError(Object error) {
     if (error is EmailNotVerifiedException) {
       return 'Confirme seu email para continuar. Enviamos um link para você.';

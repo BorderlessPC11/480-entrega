@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
+import '../../../core/user/user_display.dart';
+import '../data/user_profile_repository.dart';
+import 'edit_profile_screen.dart';
 import 'widgets/info_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/stat_tile.dart';
@@ -14,36 +17,63 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final driver = _mockDriver();
-    final accountEmail =
-        FirebaseAuth.instance.currentUser?.email ?? driver.email;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = math.min(constraints.maxWidth, 560.0);
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                    child: Text(
-                      'Perfil',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.userChanges(),
+      initialData: FirebaseAuth.instance.currentUser,
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.data;
+        if (user == null) {
+          return const Center(
+            child: Text('Não autenticado.'),
+          );
+        }
+        return StreamBuilder<String?>(
+          stream: UserProfileRepository().watchPhone(user.uid),
+          builder: (context, phoneSnapshot) {
+            final storedPhone = phoneSnapshot.data;
+            final name = userDisplayLabel(user) ?? 'Motorista';
+            final initials = userInitials(user);
+            final accountEmail = user.email ?? driver.email;
+            final displayNameRaw = user.displayName?.trim() ?? '';
+            final String phoneValue;
+            if (phoneSnapshot.hasError) {
+              phoneValue = 'Não foi possível carregar';
+            } else if (storedPhone != null && storedPhone.isNotEmpty) {
+              phoneValue = storedPhone;
+            } else {
+              phoneValue = 'Não informado';
+            }
+
+            return LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = math.min(constraints.maxWidth, 560.0);
+            return Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                        child: Text(
+                          'Perfil',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.2,
                           ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ProfileHeader(
-                      name: driver.name,
-                      initials: driver.initials,
+                      name: name,
+                      initials: initials,
+                      photoUrl: user.photoURL,
                       rating: driver.rating,
                       reviewCount: driver.reviewCount,
                       onSettingsTap: () {
@@ -53,12 +83,25 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      onEditTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Editar perfil (em breve).'),
+                      onEditTap: () async {
+                        final ok = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute<bool>(
+                            builder: (_) => EditProfileScreen(
+                              userId: user.uid,
+                              initialDisplayName: displayNameRaw,
+                              initialPhone: storedPhone,
+                              initialPhotoUrl: user.photoURL,
+                              avatarInitials: initials,
+                            ),
                           ),
                         );
+                        if (ok == true && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Perfil atualizado.'),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),
@@ -82,7 +125,7 @@ class ProfileScreen extends StatelessWidget {
                             _InfoLine(
                               icon: Icons.call_rounded,
                               label: 'Telefone',
-                              value: driver.phone,
+                              value: phoneValue,
                             ),
                           ],
                         ),
@@ -195,6 +238,10 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
+        );
+          },
+        );
+          },
         );
       },
     );

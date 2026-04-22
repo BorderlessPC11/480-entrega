@@ -1,10 +1,13 @@
 import 'dart:math' as math;
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/user/user_display.dart';
 import '../data/mock_orders.dart';
 import '../domain/order.dart';
 import 'order_details_screen.dart';
+import '../../history/presentation/history_tab.dart';
 import '../../map/presentation/ride_map_tab.dart';
 import '../../profile/presentation/profile_screen.dart';
 import 'widgets/filter_chips_row.dart';
@@ -52,7 +55,7 @@ class _DriveHomeScreenState extends State<DriveHomeScreen> {
               onSelectedFilter: (id) => setState(() => _selectedFilterId = id),
             ),
             const RideMapTab(),
-            const _PlaceholderTab(title: 'Histórico'),
+            const HistoryTab(),
             const ProfileScreen(),
           ],
         ),
@@ -145,13 +148,24 @@ class _DriveHomeTab extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                    child: _Header(
-                      title: 'OS Disponíveis',
-                      subtitle:
-                          '${filtered.length} ordens disponíveis',
-                      onNotificationTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sem notificações.')),
+                    child: StreamBuilder<User?>(
+                      stream: FirebaseAuth.instance.userChanges(),
+                      initialData: FirebaseAuth.instance.currentUser,
+                      builder: (context, snapshot) {
+                        final user = snapshot.data;
+                        return _Header(
+                          title: 'OS Disponíveis',
+                          subtitle:
+                              '${filtered.length} ordens disponíveis',
+                          user: user,
+                          onNotificationTap: () {
+                            final account = user?.email ?? user?.uid ?? '—';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Sem notificações. Conta: $account'),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -243,17 +257,24 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.title,
     required this.subtitle,
+    required this.user,
     required this.onNotificationTap,
   });
 
   final String title;
   final String subtitle;
+  final User? user;
   final VoidCallback onNotificationTap;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final cs = t.colorScheme;
+    final label = userDisplayLabel(user);
+    final accountHint = user?.email ?? user?.displayName ?? user?.uid;
+    final notificationTooltip = accountHint != null
+        ? 'Notificações ($accountHint)'
+        : 'Notificações';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,6 +290,19 @@ class _Header extends StatelessWidget {
                   letterSpacing: 0.2,
                 ),
               ),
+              if (label != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.textTheme.labelLarge?.copyWith(
+                    color: cs.primary.withValues(alpha: 0.95),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
@@ -288,41 +322,65 @@ class _Header extends StatelessWidget {
         IconButton.filledTonal(
           onPressed: onNotificationTap,
           icon: const Icon(Icons.notifications_none_rounded),
-          tooltip: 'Notificações',
+          tooltip: notificationTooltip,
         ),
         const SizedBox(width: 8),
-        const _Avatar(),
+        _Avatar(user: user),
       ],
     );
   }
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar();
+  const _Avatar({required this.user});
+
+  final User? user;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            cs.primary.withValues(alpha: 0.85),
-            cs.tertiary.withValues(alpha: 0.75),
-          ],
+    final initials = userInitials(user);
+    final photo = user?.photoURL;
+    final label = userDisplayLabel(user) ?? user?.email ?? user?.uid ?? 'Conta';
+    return Tooltip(
+      message: label,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [
+              cs.primary.withValues(alpha: 0.85),
+              cs.tertiary.withValues(alpha: 0.75),
+            ],
+          ),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.6)),
         ),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.6)),
-      ),
-      child: Center(
-        child: Text(
-          'HC',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w900,
+        clipBehavior: Clip.antiAlias,
+        child: photo != null && photo.isNotEmpty
+            ? Image.network(
+                photo,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Text(
+                    initials,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+              )
+            : Center(
+                child: Text(
+                  initials,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
               ),
-        ),
       ),
     );
   }
@@ -356,22 +414,6 @@ class _StaggeredIn extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Center(
-      child: Text(
-        title,
-        style: t.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-      ),
     );
   }
 }
