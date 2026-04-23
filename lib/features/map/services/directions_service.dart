@@ -14,14 +14,38 @@ class DirectionsResult {
   final String? error;
 }
 
+/// Rota simulada (linha reta) sem chamar a Directions API.  
+/// Para usar a API real: `--dart-define=MOCK_GOOGLE_MAPS=false` e chave [GOOGLE_DIRECTIONS_API_KEY].
+const bool kUseMockGoogleDirections = bool.fromEnvironment(
+  'MOCK_GOOGLE_MAPS',
+  defaultValue: true,
+);
+
 class DirectionsService {
   static const _directionsApiBase =
       'https://maps.googleapis.com/maps/api/directions/json';
 
-  Future<DirectionsResult> fetchRoutePolyline({
-    required LatLng origin,
-    required LatLng destination,
-  }) async {
+  /// Rota aproximada (segmentos) entre origem e destino, para testar o mapa sem API.
+  DirectionsResult _mockRoute(LatLng origin, LatLng destination) {
+    const steps = 16;
+    final points = <LatLng>[];
+    for (var i = 0; i <= steps; i++) {
+      final t = i / steps;
+      points.add(
+        LatLng(
+          origin.latitude + (destination.latitude - origin.latitude) * t,
+          origin.longitude + (destination.longitude - origin.longitude) * t,
+        ),
+      );
+    }
+    return DirectionsResult(points: points);
+  }
+
+  /// Implementação real da Google Directions API (só com `MOCK_GOOGLE_MAPS=false`).
+  Future<DirectionsResult> _fetchRouteFromGoogle(
+    LatLng origin,
+    LatLng destination,
+  ) async {
     const key = String.fromEnvironment('GOOGLE_DIRECTIONS_API_KEY');
     if (key.isEmpty) {
       return const DirectionsResult(
@@ -83,6 +107,16 @@ class DirectionsService {
     return DirectionsResult(points: points);
   }
 
+  Future<DirectionsResult> fetchRoutePolyline({
+    required LatLng origin,
+    required LatLng destination,
+  }) async {
+    if (kUseMockGoogleDirections) {
+      return _mockRoute(origin, destination);
+    }
+    return _fetchRouteFromGoogle(origin, destination);
+  }
+
   LatLngBounds boundsFor({
     required LatLng a,
     required LatLng b,
@@ -106,4 +140,3 @@ class DirectionsService {
     return LatLngBounds(southwest: sw, northeast: ne);
   }
 }
-

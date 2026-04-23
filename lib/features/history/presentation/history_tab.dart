@@ -2,14 +2,25 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/user/user_role.dart';
 import '../../drive_home/domain/order.dart';
-import '../data/mock_history.dart';
+import '../domain/history_item.dart';
+import '../../orders/data/orders_repository.dart';
 import 'history_filter_logic.dart';
 import 'widgets/history_formatters.dart';
 import 'widgets/history_item_card.dart';
 
 class HistoryTab extends StatefulWidget {
-  const HistoryTab({super.key});
+  const HistoryTab({
+    super.key,
+    required this.allOrders,
+    required this.userId,
+    required this.userRole,
+  });
+
+  final List<Order> allOrders;
+  final String userId;
+  final UserRole userRole;
 
   @override
   State<HistoryTab> createState() => _HistoryTabState();
@@ -64,7 +75,13 @@ class _HistoryTabState extends State<HistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    final allItems = mockHistoryItems();
+    final forHistory = OrdersRepository().filterHistoryForUser(
+      widget.allOrders,
+      widget.userId,
+      widget.userRole,
+    );
+    final allItems =
+        forHistory.map<HistoryItem>((o) => HistoryItem.fromOrder(o)).toList();
     final items = applyHistoryFilters(
       items: allItems,
       onlyConcluidas: _onlyConcluidas,

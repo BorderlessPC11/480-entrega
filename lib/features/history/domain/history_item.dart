@@ -23,6 +23,29 @@ class HistoryItem {
     this.outcome = HistoryOutcome.concluida,
   });
 
+  factory HistoryItem.fromOrder(Order o) {
+    final oc = o.outcome ?? 'concluida';
+    HistoryOutcome? parsed;
+    for (final e in HistoryOutcome.values) {
+      if (e.name == oc) {
+        parsed = e;
+        break;
+      }
+    }
+    final outcome = parsed ?? HistoryOutcome.concluida;
+    return HistoryItem(
+      id: o.id,
+      category: o.category,
+      customerName: o.customerName,
+      addressLine1: o.addressLine1,
+      addressLine2: o.addressLine2,
+      amountCents: o.amountCents,
+      completedAt: o.completedAt ?? o.createdAt,
+      durationMinutes: o.durationMinutes,
+      outcome: outcome,
+    );
+  }
+
   final String id;
   final OrderCategory category;
   final String customerName;

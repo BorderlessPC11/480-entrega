@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme_mode_scope.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/user/user_display.dart';
+import '../../../core/user/user_role.dart';
 import '../data/user_profile_repository.dart';
 import 'edit_profile_screen.dart';
 import 'widgets/info_card.dart';
@@ -13,11 +14,13 @@ import 'widgets/profile_header.dart';
 import 'widgets/stat_tile.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.role = UserRole.entregador});
+
+  final UserRole role;
 
   @override
   Widget build(BuildContext context) {
-    final driver = _mockDriver();
+    final def = _mockDriver();
 
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.userChanges(),
@@ -29,13 +32,29 @@ class ProfileScreen extends StatelessWidget {
             child: Text('Não autenticado.'),
           );
         }
+        return StreamBuilder<Map<String, dynamic>>(
+          stream: UserProfileRepository().watchUserProfile(user.uid),
+          builder: (context, profSnapshot) {
+            final p = profSnapshot.data ?? {};
         return StreamBuilder<String?>(
           stream: UserProfileRepository().watchPhone(user.uid),
           builder: (context, phoneSnapshot) {
             final storedPhone = phoneSnapshot.data;
             final name = userDisplayLabel(user) ?? 'Motorista';
             final initials = userInitials(user);
-            final accountEmail = user.email ?? driver.email;
+            final accountEmail = user.email ?? def.email;
+            final tripCount = (p['totalTrips'] as num?)?.toInt() ?? def.totalTrips;
+            final completedC =
+                (p['completedOrders'] as num?)?.toInt() ?? def.completedOrders;
+            final expM =
+                (p['experienceMonths'] as num?)?.toInt() ?? def.experienceMonths;
+            final rating =
+                (p['rating'] as num?)?.toDouble() ?? def.rating;
+            final reviews =
+                (p['reviewCount'] as num?)?.toInt() ?? def.reviewCount;
+            final vModel = (p['vehicleModel'] as String?) ?? def.vehicleModel;
+            final vPlate = (p['vehiclePlate'] as String?) ?? def.vehiclePlate;
+            final vStatus = (p['vehicleStatus'] as String?) ?? def.vehicleStatus;
             final displayNameRaw = user.displayName?.trim() ?? '';
             final String phoneValue;
             if (phoneSnapshot.hasError) {
@@ -75,8 +94,11 @@ class ProfileScreen extends StatelessWidget {
                       name: name,
                       initials: initials,
                       photoUrl: user.photoURL,
-                      rating: driver.rating,
-                      reviewCount: driver.reviewCount,
+                      rating: rating,
+                      reviewCount: reviews,
+                      roleBadge: role == UserRole.solicitante
+                          ? 'Solicitante'
+                          : 'Motorista parceiro',
                       onSettingsTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -182,84 +204,86 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: _StaggeredIn(
-                      index: 2,
-                      child: InfoCard(
-                        title: 'Estatísticas',
-                        trailing: const Icon(Icons.auto_graph_rounded),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: StatTile(
-                                    label: 'Viagens',
-                                    value: driver.totalTrips.toString(),
-                                    icon: Icons.route_rounded,
+                if (role == UserRole.entregador)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _StaggeredIn(
+                        index: 2,
+                        child: InfoCard(
+                          title: 'Estatísticas',
+                          trailing: const Icon(Icons.auto_graph_rounded),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: StatTile(
+                                      label: 'Viagens',
+                                      value: tripCount.toString(),
+                                      icon: Icons.route_rounded,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: StatTile(
-                                    label: 'OS concluídas',
-                                    value: driver.completedOrders.toString(),
-                                    icon: Icons.verified_rounded,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: StatTile(
+                                      label: 'OS concluídas',
+                                      value: completedC.toString(),
+                                      icon: Icons.verified_rounded,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            StatTile(
-                              label: 'Experiência',
-                              value: '${driver.experienceMonths} meses',
-                              icon: Icons.badge_rounded,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    child: _StaggeredIn(
-                      index: 3,
-                      child: InfoCard(
-                        title: 'Veículo',
-                        trailing: const Icon(Icons.directions_car_rounded),
-                        child: Column(
-                          children: [
-                            _InfoLine(
-                              icon: Icons.commute_rounded,
-                              label: 'Modelo',
-                              value: driver.vehicleModel,
-                            ),
-                            const SizedBox(height: 12),
-                            _InfoLine(
-                              icon: Icons.confirmation_number_rounded,
-                              label: 'Placa',
-                              value: driver.vehiclePlate,
-                            ),
-                            const SizedBox(height: 12),
-                            _InfoLine(
-                              icon: Icons.circle_rounded,
-                              label: 'Status',
-                              value: driver.vehicleStatus,
-                              valueColor: _statusColor(
-                                Theme.of(context).colorScheme,
-                                driver.vehicleStatus,
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 12),
+                              StatTile(
+                                label: 'Experiência',
+                                value: '$expM meses',
+                                icon: Icons.badge_rounded,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                if (role == UserRole.entregador)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      child: _StaggeredIn(
+                        index: 3,
+                        child: InfoCard(
+                          title: 'Veículo',
+                          trailing: const Icon(Icons.directions_car_rounded),
+                          child: Column(
+                            children: [
+                              _InfoLine(
+                                icon: Icons.commute_rounded,
+                                label: 'Modelo',
+                                value: vModel,
+                              ),
+                              const SizedBox(height: 12),
+                              _InfoLine(
+                                icon: Icons.confirmation_number_rounded,
+                                label: 'Placa',
+                                value: vPlate,
+                              ),
+                              const SizedBox(height: 12),
+                              _InfoLine(
+                                icon: Icons.circle_rounded,
+                                label: 'Status',
+                                value: vStatus,
+                                valueColor: _statusColor(
+                                  Theme.of(context).colorScheme,
+                                  vStatus,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -288,6 +312,8 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         );
+      },
+    );
           },
         );
           },

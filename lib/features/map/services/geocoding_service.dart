@@ -13,10 +13,35 @@ class GeocodingResult {
   final String? error;
 }
 
+/// Geocoding simulado (coordenadas fixas na região de SP) sem chamar a API.  
+/// Para usar a API real: `--dart-define=MOCK_GOOGLE_MAPS=false` e chave [GOOGLE_DIRECTIONS_API_KEY].
+const bool kUseMockGoogleGeocoding = bool.fromEnvironment(
+  'MOCK_GOOGLE_MAPS',
+  defaultValue: true,
+);
+
 class GeocodingService {
   static const _base = 'https://maps.googleapis.com/maps/api/geocode/json';
 
-  Future<GeocodingResult> geocodeAddress(String address) async {
+  /// Marco em São Paulo; pequena variação com base no text do endereço (só para testes visuais).
+  GeocodingResult _mockGeocode(String address) {
+    final t = address.trim();
+    if (t.isEmpty) {
+      return const GeocodingResult(
+        latLng: null,
+        error: 'Informe um endereço.',
+      );
+    }
+    final h = t.hashCode;
+    final dLat = (h % 1000) / 1e5;
+    final dLng = ((h >> 8) % 1000) / 1e5;
+    return GeocodingResult(
+      latLng: LatLng(-23.55052 + dLat, -46.633308 + dLng),
+    );
+  }
+
+  /// Implementação real da Google Geocoding API (só com `MOCK_GOOGLE_MAPS=false`).
+  Future<GeocodingResult> _geocodeFromGoogle(String address) async {
     const key = String.fromEnvironment('GOOGLE_DIRECTIONS_API_KEY');
     if (key.isEmpty) {
       return const GeocodingResult(
@@ -69,5 +94,11 @@ class GeocodingService {
 
     return GeocodingResult(latLng: LatLng(lat, lng));
   }
-}
 
+  Future<GeocodingResult> geocodeAddress(String address) async {
+    if (kUseMockGoogleGeocoding) {
+      return _mockGeocode(address);
+    }
+    return _geocodeFromGoogle(address);
+  }
+}

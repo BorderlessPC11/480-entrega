@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../user/user_role.dart';
 import 'auth_exceptions.dart';
+import 'package:borderless_app/features/profile/data/user_profile_repository.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
@@ -10,11 +12,23 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   /// Registers, signs the user in, and sends the verification email.
-  Future<void> register(String email, String password) async {
+  Future<void> register(
+    String email,
+    String password, {
+    required UserRole role,
+  }) async {
     final cred = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
     );
+    final uid = cred.user?.uid;
+    if (uid != null) {
+      await UserProfileRepository().createInitialDocument(
+        uid: uid,
+        email: email.trim(),
+        role: role,
+      );
+    }
     await cred.user?.sendEmailVerification();
   }
 

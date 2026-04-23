@@ -1,3 +1,4 @@
+import 'package:borderless_app/app/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -159,13 +160,7 @@ class _RouteMapPanelState extends State<RouteMapPanel> {
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, -6),
-              ),
-            ],
+            boxShadow: AppTheme.sheetBoxShadows(cs),
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -177,17 +172,24 @@ class _RouteMapPanelState extends State<RouteMapPanel> {
                     height: constraints.maxHeight,
                     child: Column(
                       children: [
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 44,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: cs.outline.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(999),
+                        const SizedBox(height: AppTheme.spaceSm),
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: cs.outline.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppTheme.spaceMd,
+                            AppTheme.spaceSm,
+                            AppTheme.spaceSm,
+                            AppTheme.spaceSm,
+                          ),
                           child: Row(
                             children: [
                               Text(
@@ -210,7 +212,12 @@ class _RouteMapPanelState extends State<RouteMapPanel> {
                         ),
                         if (_permissionMessage != null)
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppTheme.spaceMd,
+                              0,
+                              AppTheme.spaceMd,
+                              AppTheme.spaceSm + 2,
+                            ),
                             child: Row(
                               children: [
                                 Expanded(
@@ -225,7 +232,7 @@ class _RouteMapPanelState extends State<RouteMapPanel> {
                                         ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppTheme.spaceSm),
                                 OutlinedButton(
                                   onPressed: _permissionAction,
                                   child: Text(

@@ -1,17 +1,19 @@
 import 'dart:math' as math;
 
+import 'package:borderless_app/app/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../data/mock_rides.dart';
 import '../domain/ride_map_item.dart';
 import '../services/directions_service.dart';
 import '../services/location_service.dart';
 import 'widgets/persistent_route_map.dart';
 
 class RideMapTab extends StatefulWidget {
-  const RideMapTab({super.key});
+  const RideMapTab({super.key, required this.rides});
+
+  final List<RideMapItem> rides;
 
   @override
   State<RideMapTab> createState() => _RideMapTabState();
@@ -21,8 +23,6 @@ class _RideMapTabState extends State<RideMapTab> {
   static const _minSheet = 0.38;
   static const _maxSheet = 0.96;
   static const _mapFallbackCenter = LatLng(-23.550520, -46.633308);
-
-  final _rides = mockRideMapItems();
   final _locationService = LocationService();
   final _directionsService = DirectionsService();
   final _mapKey = GlobalKey();
@@ -39,8 +39,11 @@ class _RideMapTabState extends State<RideMapTab> {
   @override
   void initState() {
     super.initState();
-    _selectedRide = _rides.first;
-    _refreshRoute();
+    final r = widget.rides;
+    _selectedRide = r.isNotEmpty ? r.first : null;
+    if (_selectedRide != null) {
+      _refreshRoute();
+    }
   }
 
   Future<void> _refreshRoute() async {
@@ -133,8 +136,28 @@ class _RideMapTabState extends State<RideMapTab> {
 
   @override
   Widget build(BuildContext context) {
-    final ride = _selectedRide!;
-    final cs = Theme.of(context).colorScheme;
+    final ride = _selectedRide;
+    final t = Theme.of(context);
+    final cs = t.colorScheme;
+    if (ride == null || widget.rides.isEmpty) {
+      return SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.space2xl,
+              vertical: AppTheme.spaceLg,
+            ),
+            child: Text(
+              'Nenhuma rota com destino mapeado. Aguarde novas OS ou crie rotas (solicitante).',
+              textAlign: TextAlign.center,
+              style: t.textTheme.bodyLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final origin = _driverLatLng ?? _mapFallbackCenter;
 
     final markers = <Marker>{
@@ -164,260 +187,262 @@ class _RideMapTabState extends State<RideMapTab> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = math.min(constraints.maxWidth, 560.0);
-        return Stack(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: SafeArea(
-                  bottom: false,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 320),
-                    children: [
-                      Text(
-                        'Mapa de rotas',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+        final maxWidth = math.min(constraints.maxWidth, AppTheme.maxContentWidth);
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              children: [
+                // Cabeçalho + seletor + resumo: ~40% da altura, rola se faltar espaço.
+                Expanded(
+                  flex: 2,
+                  child: SafeArea(
+                    bottom: false,
+                    child: SingleChildScrollView(
+                      padding: AppTheme.mapInfoScrollPadding,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Mapa de rotas',
+                            style: t.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Selecione uma corrida para traçar o caminho.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          ),
+                          const SizedBox(height: AppTheme.spaceSm),
+                          Text(
+                            'Selecione uma corrida para traçar o caminho.',
+                            style: t.textTheme.bodyMedium?.copyWith(
                               color: cs.onSurface.withValues(alpha: 0.75),
                               fontWeight: FontWeight.w600,
                             ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 130,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _rides.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(width: 10),
-                          itemBuilder: (context, index) {
-                            final item = _rides[index];
-                            final selected = item.id == ride.id;
-                            return SizedBox(
-                              width: 210,
-                              child: Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(
-                                    color: selected
-                                        ? cs.primary.withValues(alpha: 0.8)
-                                        : cs.outline.withValues(alpha: 0.35),
-                                  ),
-                                ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () => _selectRide(item),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.label,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.copyWith(
+                          ),
+                          const SizedBox(height: AppTheme.spaceLg),
+                          SizedBox(
+                            height: 130,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: widget.rides.length,
+                              padding: const EdgeInsets.only(
+                                right: AppTheme.space2xs,
+                              ),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(width: AppTheme.spaceMd),
+                              itemBuilder: (context, index) {
+                                final item = widget.rides[index];
+                                final selected = item.id == ride.id;
+                                return SizedBox(
+                                  width: 210,
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: BorderSide(
+                                        color: selected
+                                            ? cs.primary.withValues(alpha: 0.8)
+                                            : cs.outline.withValues(alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () => _selectRide(item),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.label,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: t.textTheme.titleSmall?.copyWith(
                                                 fontWeight: FontWeight.w900,
                                               ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          item.id,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelMedium
-                                              ?.copyWith(
+                                            ),
+                                            const SizedBox(height: AppTheme.spaceSm),
+                                            Text(
+                                              item.id,
+                                              style: t.textTheme.labelMedium?.copyWith(
                                                 color: cs.onSurface
                                                     .withValues(alpha: 0.72),
                                                 fontWeight: FontWeight.w700,
                                               ),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          _timeLabel(item.scheduledAt),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelLarge
-                                              ?.copyWith(
+                                            ),
+                                            const Spacer(),
+                                            Text(
+                                              _timeLabel(item.scheduledAt),
+                                              style: t.textTheme.labelLarge?.copyWith(
                                                 color: cs.primary,
                                                 fontWeight: FontWeight.w800,
                                               ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _rowLine(
-                                context: context,
-                                icon: Icons.store_mall_directory_outlined,
-                                title: 'Origem',
-                                text: ride.pickupAddress,
-                              ),
-                              const SizedBox(height: 12),
-                              _rowLine(
-                                context: context,
-                                icon: Icons.flag_outlined,
-                                title: 'Destino',
-                                text: ride.destinationAddress,
-                              ),
-                              if (_permissionMessage != null) ...[
-                                const SizedBox(height: 14),
-                                Text(
-                                  _permissionMessage!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.spaceLg),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppTheme.spaceMd + 2),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _rowLine(
+                                    context: context,
+                                    icon: Icons.store_mall_directory_outlined,
+                                    title: 'Origem',
+                                    text: ride.pickupAddress,
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceMd),
+                                  _rowLine(
+                                    context: context,
+                                    icon: Icons.flag_outlined,
+                                    title: 'Destino',
+                                    text: ride.destinationAddress,
+                                  ),
+                                  if (_permissionMessage != null) ...[
+                                    const SizedBox(height: AppTheme.spaceMd + 2),
+                                    Text(
+                                      _permissionMessage!,
+                                      style: t.textTheme.bodySmall?.copyWith(
                                         color: cs.error,
                                         fontWeight: FontWeight.w700,
                                       ),
-                                ),
-                                const SizedBox(height: 8),
-                                OutlinedButton(
-                                  onPressed: _handlePermissionAction,
-                                  child: Text(
-                                    (_permissionMessage?.contains('permanentemente') ??
-                                            false)
-                                        ? 'Abrir configurações'
-                                        : 'Tentar novamente',
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: DraggableScrollableSheet(
-                  controller: _sheetController,
-                  initialChildSize: _minSheet,
-                  minChildSize: _minSheet,
-                  maxChildSize: _maxSheet,
-                  snap: true,
-                  snapSizes: const [_minSheet, _maxSheet],
-                  builder: (context, scrollController) {
-                    return DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: cs.surface,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            blurRadius: 20,
-                            offset: const Offset(0, -6),
-                          ),
-                        ],
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, c) {
-                          return ListView(
-                            controller: scrollController,
-                            physics: const ClampingScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height: c.maxHeight,
-                                child: Column(
-                                  children: [
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: 44,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        color: cs.outline.withValues(alpha: 0.7),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            'Rota no mapa',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w900,
-                                                ),
-                                          ),
-                                          const Spacer(),
-                                          IconButton(
-                                            onPressed: _toggleSheet,
-                                            icon: const Icon(Icons.swap_vert_rounded),
-                                            tooltip: 'Expandir/Recolher',
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(
-                                          top: Radius.circular(14),
-                                        ),
-                                        child: PersistentRouteMap(
-                                          key: _mapKey,
-                                          initialCameraPosition: CameraPosition(
-                                            target: origin,
-                                            zoom: 12.8,
-                                          ),
-                                          markers: markers,
-                                          polylines: polylines,
-                                          isLoadingRoute: _loadingRoute,
-                                          showMyLocation: _driverLatLng != null,
-                                          errorMessage: _routeError,
-                                          onMapCreated: (controller) {
-                                            _mapController = controller;
-                                            _fitCamera();
-                                          },
-                                        ),
+                                    const SizedBox(height: AppTheme.spaceSm),
+                                    OutlinedButton(
+                                      onPressed: _handlePermissionAction,
+                                      child: Text(
+                                        (_permissionMessage
+                                                    ?.contains('permanentemente') ??
+                                                false)
+                                            ? 'Abrir configurações'
+                                            : 'Tentar novamente',
                                       ),
                                     ),
                                   ],
-                                ),
+                                ],
                               ),
-                            ],
-                          );
-                        },
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
+                // Mapa: ~60% da altura; painel deslizante independente do cabeçalho.
+                Expanded(
+                  flex: 3,
+                  child: DraggableScrollableSheet(
+                    controller: _sheetController,
+                    initialChildSize: _minSheet,
+                    minChildSize: _minSheet,
+                    maxChildSize: _maxSheet,
+                    snap: true,
+                    snapSizes: const [_minSheet, _maxSheet],
+                    builder: (context, scrollController) {
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                          boxShadow: AppTheme.sheetBoxShadows(cs),
+                        ),
+                        child: LayoutBuilder(
+                          builder: (context, c) {
+                            return ListView(
+                              controller: scrollController,
+                              physics: const ClampingScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height: c.maxHeight,
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(height: AppTheme.spaceSm),
+                                      Center(
+                                        child: Semantics(
+                                          label: 'Arrastar o painel do mapa',
+                                          child: Container(
+                                            width: 44,
+                                            height: 5,
+                                            decoration: BoxDecoration(
+                                              color: cs.outline.withValues(alpha: 0.6),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          AppTheme.spaceMd,
+                                          AppTheme.spaceSm,
+                                          AppTheme.spaceSm,
+                                          AppTheme.spaceSm,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              'Rota no mapa',
+                                              style: t.textTheme.titleSmall
+                                                  ?.copyWith(
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            IconButton(
+                                              onPressed: _toggleSheet,
+                                              icon: const Icon(
+                                                Icons.swap_vert_rounded,
+                                              ),
+                                              tooltip: 'Expandir/Recolher',
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: const BorderRadius.vertical(
+                                            top: Radius.circular(14),
+                                          ),
+                                          child: PersistentRouteMap(
+                                            key: _mapKey,
+                                            initialCameraPosition: CameraPosition(
+                                              target: origin,
+                                              zoom: 12.8,
+                                            ),
+                                            markers: markers,
+                                            polylines: polylines,
+                                            isLoadingRoute: _loadingRoute,
+                                            showMyLocation: _driverLatLng != null,
+                                            errorMessage: _routeError,
+                                            onMapCreated: (controller) {
+                                              _mapController = controller;
+                                              _fitCamera();
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
@@ -440,7 +465,7 @@ class _RideMapTabState extends State<RideMapTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.75)),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppTheme.spaceMd),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,6 +3,63 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const _seed = Color(0xFF7C4DFF);
 
+  // —— Design tokens: espaçamento (escala fixa; cores vêm de [ColorScheme].) ——
+
+  static const double space2xs = 3;
+  static const double spaceXs = 4;
+  static const double spaceSm = 8;
+  static const double spaceMd = 12;
+  static const double spaceLg = 16;
+  static const double spaceXl = 20;
+  static const double space2xl = 24;
+
+  /// Largura máxima para conteúdo centralizado (ex.: mapa, formulário largo).
+  static const double maxContentWidth = 560;
+
+  /// Largura para listas de cartões (entregador / solicitante).
+  static const double maxListContentWidth = 520;
+
+  /// Padding padrão de página (SafeArea + colunas).
+  static const EdgeInsets pagePadding = EdgeInsets.fromLTRB(
+    spaceLg,
+    14,
+    spaceLg,
+    spaceLg,
+  );
+
+  /// Área informativa acima do mapa (só horizontal + topo; o fundo preenche o [Expanded] do mapa).
+  static const EdgeInsets mapInfoScrollPadding = EdgeInsets.fromLTRB(
+    spaceLg,
+    spaceSm,
+    spaceLg,
+    spaceMd,
+  );
+
+  /// Sublinhado de títulos: topo confortável abaixo do entalhe, base junto ao próximo bloco.
+  static const EdgeInsets homeHeaderPadding = EdgeInsets.fromLTRB(
+    spaceLg,
+    14,
+    spaceLg,
+    spaceSm,
+  );
+
+  /// Espaço extra no fim de listas acima da bottom bar (evita corte com o rótulo do FAB/nav).
+  static const double listBottomWithNav = 28;
+
+  /// ListView de formulário com barra inferior de navegação.
+  static const double bottomFormScrollPadding = 100;
+
+  /// Sombra do painel / sheet (tema: usa a cor de sombra do esquema).
+  static List<BoxShadow> sheetBoxShadows(ColorScheme cs) {
+    return [
+      BoxShadow(
+        color: cs.shadow.withValues(alpha: 0.28),
+        blurRadius: 20,
+        offset: const Offset(0, -4),
+      ),
+    ];
+  }
+
   static ThemeData dark() {
     final base = ThemeData(
       useMaterial3: true,

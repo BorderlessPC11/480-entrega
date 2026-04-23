@@ -10,6 +10,7 @@ class ProfileHeader extends StatelessWidget {
     this.photoUrl,
     required this.rating,
     required this.reviewCount,
+    this.roleBadge = 'Motorista parceiro',
     required this.onSettingsTap,
     required this.onEditTap,
   });
@@ -20,6 +21,7 @@ class ProfileHeader extends StatelessWidget {
   final String? photoUrl;
   final double rating;
   final int reviewCount;
+  final String roleBadge;
   final VoidCallback onSettingsTap;
   final VoidCallback onEditTap;
 
@@ -123,7 +125,7 @@ class ProfileHeader extends StatelessWidget {
                     RatingRow(rating: rating, reviewCount: reviewCount),
                     const SizedBox(height: 10),
                     Text(
-                      'Motorista parceiro',
+                      roleBadge,
                       style: t.textTheme.labelLarge?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.72),
                         fontWeight: FontWeight.w700,

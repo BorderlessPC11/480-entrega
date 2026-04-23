@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/user/user_role.dart';
 import '../../drive_home/presentation/drive_home_screen.dart';
+import '../../profile/data/user_profile_repository.dart';
+import '../../solicitante/presentation/solicitante_home_screen.dart';
 import 'email_verification_screen.dart';
 import 'login_screen.dart';
 
@@ -69,7 +72,7 @@ class _SignedInBranchState extends State<_SignedInBranch> {
       return const LoginScreen();
     }
     if (u.emailVerified) {
-      return const DriveHomeScreen();
+      return _RoleRoot(user: u);
     }
     return EmailVerificationScreen(onRecheck: _recheck);
   }
@@ -82,6 +85,31 @@ class _LoadingScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _RoleRoot extends StatelessWidget {
+  const _RoleRoot({required this.user});
+
+  final User user;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UserRole>(
+      stream: UserProfileRepository().watchRole(user.uid),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(child: Text('${snap.error}'));
+        }
+        if (!snap.hasData) {
+          return const _LoadingScaffold();
+        }
+        if (snap.data == UserRole.solicitante) {
+          return const SolicitanteHomeScreen();
+        }
+        return const DriveHomeScreen();
+      },
     );
   }
 }

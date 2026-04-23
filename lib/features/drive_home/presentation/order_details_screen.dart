@@ -12,9 +12,17 @@ import 'widgets/info_row.dart';
 import 'widgets/status_pill.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
-  const OrderDetailsScreen({super.key, required this.order});
+  const OrderDetailsScreen({
+    super.key,
+    required this.order,
+    /// Se preenchido, é acionado antes de abrir a rota (ex.: vincular entregador no Firestore).
+    this.onBeforeStartRoute,
+    this.solicitanteView = false,
+  });
 
   final Order order;
+  final Future<void> Function()? onBeforeStartRoute;
+  final bool solicitanteView;
 
   @override
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
@@ -34,12 +42,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Future<void> _resolveDestination() async {
+    final o = widget.order;
+    if (o.destLat != null && o.destLng != null) {
+      if (!mounted) return;
+      setState(() {
+        _destination = LatLng(o.destLat!, o.destLng!);
+        _geocodingLoading = false;
+        _geocodingError = null;
+      });
+      return;
+    }
     setState(() {
       _geocodingLoading = true;
       _geocodingError = null;
     });
 
-    final address = '${widget.order.addressLine1}, ${widget.order.addressLine2}, São Paulo, SP';
+    final address = '${o.addressLine1}, ${o.addressLine2}, São Paulo, SP';
     try {
       final res = await _geocoding.geocodeAddress(address);
       if (!mounted) return;
@@ -240,15 +258,32 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 width: double.infinity,
                 height: 54,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
+                  onPressed: () async {
+                    if (widget.onBeforeStartRoute != null) {
+                      try {
+                        await widget.onBeforeStartRoute!();
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erro: $e')),
+                          );
+                        }
+                        return;
+                      }
+                    }
+                    if (!context.mounted) return;
+                    await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => RouteScreen(order: order),
                       ),
                     );
                   },
                   icon: const Icon(Icons.near_me_rounded),
-                  label: const Text('Aceitar e Iniciar Rota'),
+                  label: Text(
+                    widget.solicitanteView
+                        ? 'Abrir percurso'
+                        : 'Aceitar e Iniciar Rota',
+                  ),
                 ),
               ),
             ],

@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:borderless_app/app/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/user/user_display.dart';
-import '../data/mock_orders.dart';
+import '../../../core/user/user_role.dart';
+import '../../orders/data/orders_repository.dart';
 import '../domain/order.dart';
 import 'order_details_screen.dart';
 import '../../history/presentation/history_tab.dart';
@@ -22,16 +24,17 @@ class DriveHomeScreen extends StatefulWidget {
 
 class _DriveHomeScreenState extends State<DriveHomeScreen> {
   final _searchController = TextEditingController();
-  late final List<Order> _allOrders;
-
+  final _ordersRepo = OrdersRepository();
   String _selectedFilterId = 'all';
   int _navIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _allOrders = mockOrders();
     _searchController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ordersRepo.ensureSeededFromMocks();
+    });
   }
 
   @override
@@ -42,20 +45,41 @@ class _DriveHomeScreenState extends State<DriveHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Center(child: Text('Não autenticado.'));
+    }
+    return StreamBuilder<List<Order>>(
+      stream: _ordersRepo.watchOrders(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(child: Text('${snap.error}'));
+        }
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final all = snap.data!;
+        final ent = _ordersRepo.filterForEntregador(all, uid);
+        final mapRides = _ordersRepo.ordersToRideItems(all);
+        return Scaffold(
       body: SafeArea(
         bottom: false,
         child: IndexedStack(
           index: _navIndex,
           children: [
             _DriveHomeTab(
-              allOrders: _allOrders,
+              allOrders: ent,
               searchController: _searchController,
               selectedFilterId: _selectedFilterId,
               onSelectedFilter: (id) => setState(() => _selectedFilterId = id),
+              ordersRepository: _ordersRepo,
             ),
-            const RideMapTab(),
-            const HistoryTab(),
+            RideMapTab(rides: mapRides),
+            HistoryTab(
+              allOrders: all,
+              userId: uid,
+              userRole: UserRole.entregador,
+            ),
             const ProfileScreen(),
           ],
         ),
@@ -86,6 +110,8 @@ class _DriveHomeScreenState extends State<DriveHomeScreen> {
         ),
       ),
     );
+      },
+    );
   }
 }
 
@@ -95,12 +121,14 @@ class _DriveHomeTab extends StatelessWidget {
     required this.searchController,
     required this.selectedFilterId,
     required this.onSelectedFilter,
+    required this.ordersRepository,
   });
 
   final List<Order> allOrders;
   final TextEditingController searchController;
   final String selectedFilterId;
   final ValueChanged<String> onSelectedFilter;
+  final OrdersRepository ordersRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +166,10 @@ class _DriveHomeTab extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = math.min(constraints.maxWidth, 520.0);
+        final maxWidth = math.min(
+          constraints.maxWidth,
+          AppTheme.maxListContentWidth,
+        );
         return Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -147,7 +178,7 @@ class _DriveHomeTab extends StatelessWidget {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                    padding: AppTheme.homeHeaderPadding,
                     child: StreamBuilder<User?>(
                       stream: FirebaseAuth.instance.userChanges(),
                       initialData: FirebaseAuth.instance.currentUser,
@@ -173,7 +204,10 @@ class _DriveHomeTab extends StatelessWidget {
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spaceLg,
+                      vertical: AppTheme.spaceSm + 2,
+                    ),
                     child: TextField(
                       controller: searchController,
                       textInputAction: TextInputAction.search,
@@ -193,7 +227,7 @@ class _DriveHomeTab extends StatelessWidget {
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.only(bottom: AppTheme.spaceSm - 2),
                     child: FilterChipsRow(
                       filters: chips,
                       selectedId: selectedFilterId,
@@ -202,11 +236,16 @@ class _DriveHomeTab extends StatelessWidget {
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTheme.spaceLg,
+                    AppTheme.spaceSm,
+                    AppTheme.spaceLg,
+                    AppTheme.listBottomWithNav,
+                  ),
                   sliver: SliverList.separated(
                     itemCount: filtered.length,
                     separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppTheme.spaceMd),
                     itemBuilder: (context, index) {
                       final order = filtered[index];
                       return _StaggeredIn(
@@ -215,19 +254,27 @@ class _DriveHomeTab extends StatelessWidget {
                           decoration: BoxDecoration(
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.35),
+                                color: cs.shadow.withValues(alpha: 0.22),
                                 blurRadius: 18,
-                                offset: const Offset(0, 10),
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
                           child: OrderCard(
                             order: order,
                             onTap: () {
+                              final docId = order.firestoreDocumentId;
+                              final needsAccept = docId != null &&
+                                  order.assignedTo == null &&
+                                  order.status == OrderStatus.disponivel;
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => OrderDetailsScreen(
                                     order: order,
+                                    onBeforeStartRoute: needsAccept
+                                        ? () => ordersRepository
+                                            .acceptOrderForEntregador(docId)
+                                        : null,
                                   ),
                                 ),
                               );
@@ -318,13 +365,13 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppTheme.spaceMd),
         IconButton.filledTonal(
           onPressed: onNotificationTap,
           icon: const Icon(Icons.notifications_none_rounded),
           tooltip: notificationTooltip,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppTheme.spaceSm),
         _Avatar(user: user),
       ],
     );

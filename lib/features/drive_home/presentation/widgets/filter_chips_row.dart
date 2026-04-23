@@ -1,3 +1,4 @@
+import 'package:borderless_app/app/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class FilterChipsRow extends StatelessWidget {
@@ -20,9 +21,9 @@ class FilterChipsRow extends StatelessWidget {
       height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceLg),
         itemCount: filters.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spaceMd),
         itemBuilder: (context, index) {
           final item = filters[index];
           final isSelected = item.id == selectedId;

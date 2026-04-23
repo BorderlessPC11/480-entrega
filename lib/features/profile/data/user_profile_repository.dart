@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Perfil adicional (telefone) em `users/{uid}`.
+import '../../../core/user/user_role.dart';
+
+/// Dados de perfil em `users/{uid}` (telefone, papel, estatísticas, veículo).
 class UserProfileRepository {
   UserProfileRepository({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
@@ -10,7 +12,6 @@ class UserProfileRepository {
   DocumentReference<Map<String, dynamic>> _doc(String uid) =>
       _db.collection('users').doc(uid);
 
-  /// Telefone exibido no app (texto livre, ex. máscara BR).
   Stream<String?> watchPhone(String uid) {
     return _doc(uid).snapshots().map((s) {
       if (!s.exists) return null;
@@ -21,6 +22,19 @@ class UserProfileRepository {
       }
       return null;
     });
+  }
+
+  Stream<UserRole> watchRole(String uid) {
+    return _doc(uid).snapshots().map((s) {
+      if (!s.exists) return UserRole.entregador;
+      return userRoleFromFirestore(s.data()?['role']) ??
+          UserRole.entregador;
+    });
+  }
+
+  /// Campos de perfil exibidos na tela (incl. mock migrado p/ entregador).
+  Stream<Map<String, dynamic>> watchUserProfile(String uid) {
+    return _doc(uid).snapshots().map((s) => s.data() ?? <String, dynamic>{});
   }
 
   Future<void> setPhone(String uid, String phone) async {
@@ -40,4 +54,34 @@ class UserProfileRepository {
       );
     }
   }
+
+  /// Chamado após o cadastro (com Auth já criado).
+  Future<void> createInitialDocument({
+    required String uid,
+    required String email,
+    required UserRole role,
+  }) async {
+    final data = <String, dynamic>{
+      'email': email,
+      'role': role.asFirestore,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+    if (role == UserRole.entregador) {
+      data.addAll(_entregadorDefaultStats);
+    } else {
+      data['solicitante'] = true;
+    }
+    await _doc(uid).set(data, SetOptions(merge: true));
+  }
+
+  static const _entregadorDefaultStats = <String, dynamic>{
+    'rating': 4.8,
+    'reviewCount': 128,
+    'totalTrips': 842,
+    'completedOrders': 806,
+    'experienceMonths': 14,
+    'vehicleModel': 'Fiat Strada • Prata',
+    'vehiclePlate': 'ABC1D23',
+    'vehicleStatus': 'Ativo',
+  };
 }
