@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/user/user_role.dart';
+import '../../admin/presentation/admin_home_screen.dart';
 import '../../drive_home/presentation/drive_home_screen.dart';
 import '../../profile/data/user_profile_repository.dart';
-import '../../solicitante/presentation/solicitante_home_screen.dart';
 import 'email_verification_screen.dart';
 import 'login_screen.dart';
 
@@ -105,8 +105,8 @@ class _RoleRoot extends StatelessWidget {
         if (!snap.hasData) {
           return const _LoadingScaffold();
         }
-        if (snap.data == UserRole.solicitante) {
-          return const SolicitanteHomeScreen();
+        if (snap.data == UserRole.admin) {
+          return const AdminHomeScreen();
         }
         return const DriveHomeScreen();
       },

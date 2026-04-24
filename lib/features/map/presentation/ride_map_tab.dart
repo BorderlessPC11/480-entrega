@@ -148,7 +148,7 @@ class _RideMapTabState extends State<RideMapTab> {
               vertical: AppTheme.spaceLg,
             ),
             child: Text(
-              'Nenhuma rota com destino mapeado. Aguarde novas OS ou crie rotas (solicitante).',
+              'Nenhuma rota com destino mapeado. Aguarde novas ordens de serviço publicadas pela equipe.',
               textAlign: TextAlign.center,
               style: t.textTheme.bodyLarge?.copyWith(
                 color: cs.onSurfaceVariant,

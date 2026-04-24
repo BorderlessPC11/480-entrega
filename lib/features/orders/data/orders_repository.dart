@@ -52,11 +52,10 @@ class OrdersRepository {
     }).toList();
   }
 
-  List<Order> filterForSolicitante(List<Order> all, String uid) {
+  List<Order> filterForAdmin(List<Order> all, String uid) {
     return all
         .where(
-          (o) =>
-              o.solicitanteId == uid && o.status != OrderStatus.concluido,
+          (o) => o.criadaPorUid == uid && o.status != OrderStatus.concluido,
         )
         .toList();
   }
@@ -68,8 +67,8 @@ class OrdersRepository {
   ) {
     final h = all.where((o) {
       if (o.status != OrderStatus.concluido) return false;
-      if (role == UserRole.solicitante) {
-        return o.solicitanteId == uid;
+      if (role == UserRole.admin) {
+        return o.criadaPorUid == uid;
       }
       return o.assignedTo == uid;
     }).toList();
@@ -101,8 +100,8 @@ class OrdersRepository {
     return out;
   }
 
-  Future<void> createFromSolicitante({
-    required String solicitanteId,
+  Future<void> createFromAdmin({
+    required String adminUid,
     required String customerName,
     required String primaryLabel,
     required String addressLine1,
@@ -132,7 +131,7 @@ class OrdersRepository {
       destLine2: destLine2,
       destLat: destLat,
       destLng: destLng,
-      solicitanteId: solicitanteId,
+      criadaPorUid: adminUid,
       isPool: false,
       etaMinutes: etaMinutes,
       distanceKm: distanceKm,
@@ -173,12 +172,13 @@ class OrdersRepository {
         destLat: r?.destinationLatLng.latitude,
         destLng: r?.destinationLatLng.longitude,
         isPool: true,
-        solicitanteId: null,
+        criadaPorUid: null,
         firestoreDocumentId: null,
       );
       final ref = _col.doc();
       var m = orderToFirestoreMap(merged.copyWith(firestoreDocumentId: ref.id));
       m['id'] = merged.id;
+      m['criadaPorUid'] = null;
       m['solicitanteId'] = null;
       m['isPool'] = true;
       batch.set(ref, m);
@@ -188,6 +188,7 @@ class OrdersRepository {
       final ref = _col.doc();
       var m = orderToFirestoreMap(ord);
       m['id'] = ord.id;
+      m['criadaPorUid'] = null;
       m['solicitanteId'] = null;
       m['isPool'] = true;
       batch.set(ref, m);

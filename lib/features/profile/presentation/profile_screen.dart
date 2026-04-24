@@ -96,8 +96,8 @@ class ProfileScreen extends StatelessWidget {
                       photoUrl: user.photoURL,
                       rating: rating,
                       reviewCount: reviews,
-                      roleBadge: role == UserRole.solicitante
-                          ? 'Solicitante'
+                      roleBadge: role == UserRole.admin
+                          ? 'Administrador'
                           : 'Motorista parceiro',
                       onSettingsTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(

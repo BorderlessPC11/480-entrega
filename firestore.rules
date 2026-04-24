@@ -7,18 +7,30 @@ service cloud.firestore {
     function isUser(uid) {
       return signedIn() && request.auth.uid == uid;
     }
+    // `solicitante` = legado, o app mapeia para admin
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'solicitante'];
+    }
+    // Criar ordem: sem vínculo de criador (pool) ou quem cria bate com o UID guardado
+    // (solicitanteId legado, criadaPorUid atual)
+    function orderCreateOk() {
+      let s = request.resource.data.solicitanteId;
+      let c = request.resource.data.criadaPorUid;
+      return (s == null || s == request.auth.uid)
+        && (c == null || c == request.auth.uid);
+    }
     match /users/{userId} {
-      allow read, create, update, delete: if isUser(userId);
+      allow read: if isUser(userId) || isAdmin();
+      allow create, update, delete: if isUser(userId);
     }
     match /config/{configId} {
       allow read, write: if signedIn();
     }
     match /orders/{orderId} {
       allow read: if signedIn();
-      allow create: if signedIn() && (
-        request.resource.data.solicitanteId == null ||
-        request.resource.data.solicitanteId == request.auth.uid
-      );
+      allow create: if signedIn() && orderCreateOk();
       allow update: if signedIn();
       allow delete: if false;
     }

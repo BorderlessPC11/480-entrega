@@ -33,7 +33,7 @@ class Order {
     this.destLine2 = '',
     this.destLat,
     this.destLng,
-    this.solicitanteId,
+    this.criadaPorUid,
     this.assignedTo,
     this.isPool = false,
     this.completedAt,
@@ -55,7 +55,8 @@ class Order {
   final String destLine2;
   final double? destLat;
   final double? destLng;
-  final String? solicitanteId;
+  /// UID do admin que criou a ordem (no Firestore: `criadaPorUid`; legado: `solicitanteId`).
+  final String? criadaPorUid;
   final String? assignedTo;
   final bool isPool;
   final DateTime? completedAt;
@@ -86,7 +87,7 @@ class Order {
     String? destLine2,
     double? destLat,
     double? destLng,
-    String? solicitanteId,
+    String? criadaPorUid,
     String? assignedTo,
     bool? isPool,
     int? etaMinutes,
@@ -111,7 +112,7 @@ class Order {
       destLine2: destLine2 ?? this.destLine2,
       destLat: destLat ?? this.destLat,
       destLng: destLng ?? this.destLng,
-      solicitanteId: solicitanteId ?? this.solicitanteId,
+      criadaPorUid: criadaPorUid ?? this.criadaPorUid,
       assignedTo: assignedTo ?? this.assignedTo,
       isPool: isPool ?? this.isPool,
       etaMinutes: etaMinutes ?? this.etaMinutes,

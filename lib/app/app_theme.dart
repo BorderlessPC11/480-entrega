@@ -16,7 +16,7 @@ class AppTheme {
   /// Largura máxima para conteúdo centralizado (ex.: mapa, formulário largo).
   static const double maxContentWidth = 560;
 
-  /// Largura para listas de cartões (entregador / solicitante).
+  /// Largura para listas de cartões (entregador / admin).
   static const double maxListContentWidth = 520;
 
   /// Padding padrão de página (SafeArea + colunas).

@@ -2,26 +2,28 @@ import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:borderless_app/app/app_theme.dart';import 'package:borderless_app/core/user/user_role.dart';
+
+import 'package:borderless_app/app/app_theme.dart';
+import 'package:borderless_app/core/user/user_role.dart';
 import 'package:borderless_app/features/drive_home/domain/order.dart';
 import 'package:borderless_app/features/drive_home/presentation/order_details_screen.dart';
 import 'package:borderless_app/features/drive_home/presentation/widgets/filter_chips_row.dart';
 import 'package:borderless_app/features/drive_home/presentation/widgets/order_card.dart';
-import 'package:borderless_app/features/history/presentation/history_tab.dart';
 import 'package:borderless_app/features/orders/data/orders_repository.dart';
 import 'package:borderless_app/features/profile/presentation/profile_screen.dart';
 
+import 'admin_users_tab.dart';
 import 'create_order_screen.dart';
 
-/// Shell: criar rotas, acompanhar, histórico, perfil.
-class SolicitanteHomeScreen extends StatefulWidget {
-  const SolicitanteHomeScreen({super.key});
+/// Shell: criar rotas, acompanhar, utilizadores, perfil (conta com `role: admin` no Firestore).
+class AdminHomeScreen extends StatefulWidget {
+  const AdminHomeScreen({super.key});
 
   @override
-  State<SolicitanteHomeScreen> createState() => _SolicitanteHomeScreenState();
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
-class _SolicitanteHomeScreenState extends State<SolicitanteHomeScreen> {
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _index = 0;
   String _filterId = 'all';
   final _search = TextEditingController();
@@ -56,15 +58,15 @@ class _SolicitanteHomeScreenState extends State<SolicitanteHomeScreen> {
           children: [
             const CreateOrderTab(),
             _MyRequestsTab(
-              key: const ValueKey('solic_mine'),
+              key: const ValueKey('admin_mine'),
               userId: uid,
               searchController: _search,
               filterId: _filterId,
               onFilter: (id) => setState(() => _filterId = id),
               repo: _repo,
             ),
-            _HistoryWrapper(uid: uid, repo: _repo),
-            const ProfileScreen(role: UserRole.solicitante),
+            const AdminUsersTab(),
+            const ProfileScreen(role: UserRole.admin),
           ],
         ),
       ),
@@ -83,8 +85,8 @@ class _SolicitanteHomeScreenState extends State<SolicitanteHomeScreen> {
               label: 'Minhas OS',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded),
-              label: 'Histórico',
+              icon: Icon(Icons.people_alt_rounded),
+              label: 'Utilizadores',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
@@ -93,29 +95,6 @@ class _SolicitanteHomeScreenState extends State<SolicitanteHomeScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HistoryWrapper extends StatelessWidget {
-  const _HistoryWrapper({required this.uid, required this.repo});
-  final String uid;
-  final OrdersRepository repo;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<Order>>(
-      stream: repo.watchOrders(),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return HistoryTab(
-          allOrders: snap.data!,
-          userId: uid,
-          userRole: UserRole.solicitante,
-        );
-      },
     );
   }
 }
@@ -161,7 +140,7 @@ class _MyRequestsTab extends StatelessWidget {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        var mine = repo.filterForSolicitante(snap.data!, userId);
+        var mine = repo.filterForAdmin(snap.data!, userId);
         final q = searchController.text.trim().toLowerCase();
         if (q.isNotEmpty) {
           mine = mine.where((o) {
@@ -267,7 +246,7 @@ class _MyRequestsList extends StatelessWidget {
                   ),
                   sliver: SliverList.separated(
                     itemCount: orders.length,
-                    separatorBuilder: (_, __) => const SizedBox(
+                    separatorBuilder: (context, index) => const SizedBox(
                       height: AppTheme.spaceMd,
                     ),
                     itemBuilder: (c, i) {
@@ -279,7 +258,7 @@ class _MyRequestsList extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (_) => OrderDetailsScreen(
                                 order: o,
-                                solicitanteView: true,
+                                vistaAdmin: true,
                               ),
                             ),
                           );

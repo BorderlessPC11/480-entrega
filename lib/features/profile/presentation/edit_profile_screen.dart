@@ -146,6 +146,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         await _auth.updatePhotoUrl(null);
       }
       await _auth.updateDisplayName(_name.text);
+      await _profileRepo.setDisplayName(widget.userId, _name.text);
       await _profileRepo.setPhone(widget.userId, _phone.text);
       if (mounted) {
         Navigator.of(context).pop(true);

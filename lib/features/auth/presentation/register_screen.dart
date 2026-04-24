@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
-import '../../../core/user/user_role.dart';
 import 'auth_validators.dart';
 import 'widgets/auth_primary_button.dart';
 import 'widgets/auth_text_field.dart';
@@ -24,7 +23,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _loading = false;
   bool _obscure1 = true;
   bool _obscure2 = true;
-  UserRole _role = UserRole.entregador;
   String? _error;
 
   @override
@@ -41,11 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);
     try {
-      await _auth.register(
-        _email.text,
-        _password.text,
-        role: _role,
-      );
+      await _auth.register(_email.text, _password.text);
       // O utilizador fica com sessão iniciada: o AuthGate mostra a verificação de email.
       // Remove esta rota da pilha; caso contrário o formulário fica à frente da nova árvore.
       if (mounted) {
@@ -101,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Você receberá um email para confirmar o endereço.',
+                        'Conta de entregador. Você receberá um email para confirmar o endereço.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -134,34 +128,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 showObscureToggle: true,
                                 onToggleObscure: () =>
                                     setState(() => _obscure1 = !_obscure1),
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                'Papel',
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<UserRole>(
-                                value: _role,
-                                decoration: const InputDecoration(
-                                  labelText: 'Conta de',
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: UserRole.entregador,
-                                    child: Text('Entregador — vê e aceita rotas'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: UserRole.solicitante,
-                                    child: Text('Solicitante — cria rotas (OS)'),
-                                  ),
-                                ],
-                                onChanged: (v) {
-                                  if (v != null) {
-                                    setState(() => _role = v);
-                                  }
-                                },
                               ),
                               const SizedBox(height: 14),
                               AuthTextField(

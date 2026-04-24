@@ -1,12 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:borderless_app/app/app_theme.dart';
 import 'package:flutter/services.dart';
+
+import 'package:borderless_app/app/app_theme.dart';
 import 'package:borderless_app/features/drive_home/domain/order.dart';
 import 'package:borderless_app/features/map/services/geocoding_service.dart';
 import 'package:borderless_app/features/orders/data/orders_repository.dart';
 
-/// Aba "Nova rota" — cria OS no Firestore.
+/// Aba "Nova rota" — cria OS no Firestore (conta de admin).
 class CreateOrderTab extends StatefulWidget {
   const CreateOrderTab({super.key});
 
@@ -75,8 +76,8 @@ class _CreateOrderTabState extends State<CreateOrderTab> {
         return;
       }
       final ll = res.latLng;
-      await _repo.createFromSolicitante(
-        solicitanteId: uid,
+      await _repo.createFromAdmin(
+        adminUid: uid,
         customerName: _customer.text.trim(),
         primaryLabel: _label.text.trim().isEmpty
             ? _defaultLabelFor(_cat)

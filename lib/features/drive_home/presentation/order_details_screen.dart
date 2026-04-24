@@ -17,12 +17,13 @@ class OrderDetailsScreen extends StatefulWidget {
     required this.order,
     /// Se preenchido, é acionado antes de abrir a rota (ex.: vincular entregador no Firestore).
     this.onBeforeStartRoute,
-    this.solicitanteView = false,
+    this.vistaAdmin = false,
   });
 
   final Order order;
   final Future<void> Function()? onBeforeStartRoute;
-  final bool solicitanteView;
+  /// Quando a OS é aberta a partir do fluxo de admin (criação / acompanhamento).
+  final bool vistaAdmin;
 
   @override
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
@@ -280,7 +281,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   },
                   icon: const Icon(Icons.near_me_rounded),
                   label: Text(
-                    widget.solicitanteView
+                    widget.vistaAdmin
                         ? 'Abrir percurso'
                         : 'Aceitar e Iniciar Rota',
                   ),

@@ -2,6 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 
 import '../../drive_home/domain/order.dart';
 
+String? _readCriadaPorUid(Map<String, dynamic> m) {
+  for (final k in <String>['criadaPorUid', 'solicitanteId']) {
+    final v = m[k];
+    if (v is String) {
+      final t = v.trim();
+      if (t.isNotEmpty) {
+        return t;
+      }
+    }
+  }
+  return null;
+}
+
 Order? orderFromFirestore(String docId, Map<String, dynamic> m) {
   final id = (m['id'] as String?)?.trim() ?? docId;
   final cat = _parseCategory(m['category']);
@@ -20,7 +33,7 @@ Order? orderFromFirestore(String docId, Map<String, dynamic> m) {
     destLine2: (m['destLine2'] as String?)?.trim() ?? '',
     destLat: (m['destLat'] as num?)?.toDouble(),
     destLng: (m['destLng'] as num?)?.toDouble(),
-    solicitanteId: m['solicitanteId'] as String?,
+    criadaPorUid: _readCriadaPorUid(m),
     assignedTo: m['assignedTo'] as String?,
     isPool: m['isPool'] == true,
     etaMinutes: (m['etaMinutes'] as num?)?.toInt() ?? 0,
@@ -46,7 +59,7 @@ Map<String, dynamic> orderToFirestoreMap(Order o) {
     'destLine2': o.destLine2,
     'destLat': o.destLat,
     'destLng': o.destLng,
-    'solicitanteId': o.solicitanteId,
+    'criadaPorUid': o.criadaPorUid,
     'assignedTo': o.assignedTo,
     'isPool': o.isPool,
     'etaMinutes': o.etaMinutes,

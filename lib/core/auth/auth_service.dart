@@ -11,12 +11,9 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  /// Registers, signs the user in, and sends the verification email.
-  Future<void> register(
-    String email,
-    String password, {
-    required UserRole role,
-  }) async {
+  /// Registra o utilizador como entregador, inicia sessão e envia o email de verificação.
+  /// A criação de ordens e gestão de contas fica a cargo do painel de administrador.
+  Future<void> register(String email, String password) async {
     final cred = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
@@ -26,7 +23,7 @@ class AuthService {
       await UserProfileRepository().createInitialDocument(
         uid: uid,
         email: email.trim(),
-        role: role,
+        role: UserRole.entregador,
       );
     }
     await cred.user?.sendEmailVerification();

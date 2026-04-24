@@ -37,6 +37,25 @@ class UserProfileRepository {
     return _doc(uid).snapshots().map((s) => s.data() ?? <String, dynamic>{});
   }
 
+  /// Nome mostrado em listagens admin (sincronizado a partir de "Editar perfil").
+  Future<void> setDisplayName(String uid, String name) async {
+    final t = name.trim();
+    if (t.isEmpty) {
+      await _doc(uid).set(
+        <String, dynamic>{'displayName': FieldValue.delete()},
+        SetOptions(merge: true),
+      );
+    } else {
+      await _doc(uid).set(
+        <String, dynamic>{
+          'displayName': t,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+  }
+
   Future<void> setPhone(String uid, String phone) async {
     final trimmed = phone.trim();
     if (trimmed.isEmpty) {
@@ -69,7 +88,7 @@ class UserProfileRepository {
     if (role == UserRole.entregador) {
       data.addAll(_entregadorDefaultStats);
     } else {
-      data['solicitante'] = true;
+      data['admin'] = true;
     }
     await _doc(uid).set(data, SetOptions(merge: true));
   }

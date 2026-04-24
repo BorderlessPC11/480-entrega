@@ -1,20 +1,20 @@
 enum UserRole {
   entregador,
-  solicitante,
+  admin,
 }
 
 extension UserRoleSerialization on UserRole {
   String get asFirestore {
     return switch (this) {
       UserRole.entregador => 'entregador',
-      UserRole.solicitante => 'solicitante',
+      UserRole.admin => 'admin',
     };
   }
 
   String get displayLabel {
     return switch (this) {
       UserRole.entregador => 'Entregador',
-      UserRole.solicitante => 'Solicitante',
+      UserRole.admin => 'Administrador',
     };
   }
 }
@@ -23,7 +23,9 @@ UserRole? userRoleFromFirestore(Object? v) {
   if (v is! String) return null;
   return switch (v) {
     'entregador' => UserRole.entregador,
-    'solicitante' => UserRole.solicitante,
+    // Valor em documentos antigos; tratar como admin.
+    'admin' => UserRole.admin,
+    'solicitante' => UserRole.admin,
     _ => null,
   };
 }
