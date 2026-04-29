@@ -16,11 +16,21 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+  /// Recria o [StreamBuilder] para voltar a subscrever ao stream após erro.
+  int _authStreamEpoch = 0;
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
+      key: ValueKey<int>(_authStreamEpoch),
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _AuthStreamErrorScaffold(
+            error: snapshot.error,
+            onRetry: () => setState(() => _authStreamEpoch++),
+          );
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _LoadingScaffold();
         }
@@ -30,6 +40,52 @@ class _AuthGateState extends State<AuthGate> {
         }
         return _SignedInBranch(user: user);
       },
+    );
+  }
+}
+
+class _AuthStreamErrorScaffold extends StatelessWidget {
+  const _AuthStreamErrorScaffold({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final Object? error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Não foi possível iniciar a autenticação.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '$error',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: onRetry,
+                  child: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
